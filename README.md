@@ -1,6 +1,7 @@
 # Overview
 
-This is a set of pretty quick-and-dirty shelscripts that will deploy a demo/test environment for Trend Micro 
+This is a set of pretty quick-and-dirty shell scripts that will deploy a demo/test environment for Trend Micro, Originaly forked from cvdabbeele
+
 - CloudOne Container Security (C1CS)+ Trend Micro Smart Check
 - CloudOne Application Security (C1AS)
 
@@ -10,26 +11,32 @@ Many parts are intentionally vurlnerable and should be kept fom running for a lo
 1. [Updates] (#updates)
 2. [High level overview](#high-level-overview-of-steps-see-detailed-steps-in-next-section)  
 3. [Detailed Steps](#detailed-setup-instructions)
-4. [howToDemo.md](howToDemo.md)   
+4. [howToDemo.md](howToDemo.md) 
+
 
 ## UPDATES 
 If this is your first time here, you can skip the "updates" section.  
-If you are a repeat visitor, then please check the updates below.  New veriable settings in `00_define_vars.sh.sample` may be required. 
+If you are a repeat visitor, then please check the updates below
+New veriable settings in 00_define_vars.sh.sample may be required.
+
+### 202206
+Changed links to robi1021 repo
+added a more talkative scanimage.sh version
 
 ### 20220504
-The current kubectl client 1.24 seems to be incompatible with API v1alpha5 which is used by eksctl when adding the authentication information to ~/.kube/config.  
-As a temp fix, `kubectl 1.22` is now used.  
+The current kubectl client 1.24 seems to be incompatible with API v1alpha5 which is used by eksctl when adding the authentication information to ~/.kube/config.
+As a temp fix, kubectl 1.22 is now used.
 
 ### 20220428
-Re-enabled Malware Scanning in SmartCheck  
-As indicated here: https://github.com/deep-security/smartcheck-helm/releases/tag/1.2.76 ,  Malwware Scanning is now disabled by default when installing SmartCheck.   In this update of this demo script, changes are made to re-enable it when setting up this demo.  
-The changes are made in the repo https://github.com/cvdabbeele/deployC1CSandC1AS.git which is being cloned and pulled-in by this script at runtime.  (see `git clone` in `environmentSetup.sh)   
+Re-enabled Malware Scanning in SmartCheck
+As indicated here: https://github.com/deep-security/smartcheck-helm/releases/tag/1.2.76 , Malwware Scanning is now disabled by default when installing SmartCheck. In this update of this demo script, changes are made to re-enable it when setting up this demo.
+The changes are made in the repo https://github.com/robi1021/deployC1CSandC1AS.git which is being cloned and pulled-in by this script at runtime. (see git clone in `environmentSetup.sh)
 
 ### 202110
 Changes in required variables.  Check the `00_define_vars.sh.sample` file for details (important!)  
-The script now uses the new CloudOne Datacenters, which support regional instances.    
-This requires a CloudOne account with the "emailbased" authentication.    
-
+The script now supports the new, regional CloudOne Datacenters.  This uses the new, "emailbased", authentication to CloudOne.  
+The old ${AWS_REGION} variable has been replaced by ${C1REGION}.  This is for compatibility with the upcoming cloudOneOnAzure.  
+The script now creates the "groups" in C1AS; there is no longer a need to manually create a group and provide the  TREND_AP_KEY and a TREND_AP_SECRET.  (However, for now, only monex has the C1AS agent)  
 ### 202105
 At August 13, 2021, GitHub stopped authentication with Username/Password.  You must create a Personal Access Token (PAT).  For more info see: https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/.
 How to create a PAT:   
@@ -85,8 +92,6 @@ Checkout the [howToDemo.md](howToDemo.md) for demo scenarios.
 
 - [Overview](#overview)
   - [UPDATES](#updates)
-    - [20220504](#20220504)
-    - [20220428](#20220428)
     - [202110](#202110)
     - [202105](#202105)
     - [20210505](#20210505)
@@ -230,8 +235,8 @@ https://docs.aws.amazon.com/codecommit/latest/userguide/setting-up-gc.html?icmpi
 In your Cloud9 environment, run the following command to clone this repository:
 
 ```shell
-git clone https://github.com/cvdabbeele/cloudOneOnAWS.git
-cd cloudOneOnAWS
+git clone https://github.com/robi1021/c1onAWS.git
+cd c1onAWS
 ```
 
 #### 5. Expand the disk space of the Cloud9 environment
@@ -255,14 +260,21 @@ cp 00_define_vars.sh.sample 00_define_vars.sh
 Edit the `00_define_vars.sh` file with the built in editor  
 >  ![cloud9FileEditor](images/cloud9FileEditor.png)
 
-1. Configure all variables untile the line where it says:
-   `below this line are default settings which may be optionally customised`
-2. A note on `C1PROJECT` and shared AWS accounts:
+
+1. Update the following variables:
+- `DSSC_AC`           # your SmartCheck activation key
+- `TREND_AP_KEY`      # your AP key created in C1AS by adding a "group" for MoneyX 
+- `TREND_AP_SECRET`   # your AP secret created in C1AS by adding a "group" for MoneyX 
+- `C1API_KEY`         # API key created in C1WS (Role= Full Access)
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_PASSWORD`
+
+2. `C1PROJECT` and shared AWS accounts:
 - If you are sharing an AWS account with someone else, make sure that both of you use a different C1PROJECT name.  
 - Also, one project name **may not be a subset of the other**.  e.g. c1 and c1b would be bad, but c1a and c1b would be good.
 - To make sure that you do not "see" each other's projects, pipelines, clusters, registries etc, it is best to both use a **different AWS region**  
 
-1. Preview of the RUNTIME-protection option of Cloud One Workload Security
+3. Preview of the RUNTIME-protection option of Cloud One Workload Security
 The script assumes that you have access to the C1WS-RUNTIME option.  
 If you do NOT have access to it, then add/uncomment the following line to/in your 00_define_vars.sh:  
 `export C1CS_RUNTIME="false"`
@@ -439,7 +451,7 @@ At the same level as the project directory (cloudOneOnAWS), an "apps" directory 
 ---------------------
  Adding Demo-apps
 ---------------------
-Deploying c1appsecmoneyx (from https://github.com/cvdabbeele/c1-app-sec-moneyx.git)
+Deploying c1appsecmoneyx (from https://github.com/robi1021/c1-app-sec-moneyx.git)
 ---------------------------------------------
 Importing c1-app-sec-moneyx from public git
 Cloning into 'c1-app-sec-moneyx'...
@@ -471,7 +483,7 @@ To https://git-codecommit.eu-central-1.amazonaws.com/v1/repos/cloudone01c1appsec
  * [new branch]      master -> master
 Branch 'master' set up to track remote branch 'master' from 'origin'.
 Everything up-to-date
-Deploying troopers (from https://github.com/cvdabbeele/troopers.git)
+Deploying troopers (from https://github.com/robi1021/troopers.git)
 ---------------------------------------------
 Importing troopers from public git
 Cloning into 'troopers'...
@@ -518,7 +530,7 @@ To https://git-codecommit.eu-central-1.amazonaws.com/v1/repos/cloudone01troopers
  * [new branch]      master -> master
 Branch 'master' set up to track remote branch 'master' from 'origin'.
 Everything up-to-date
-Deploying mydvwa (from https://github.com/cvdabbeele/mydvwa.git)
+Deploying mydvwa (from https://github.com/robi1021/mydvwa.git)
 ---------------------------------------------
 Importing mydvwa from public git
 Cloning into 'mydvwa'...
@@ -626,4 +638,3 @@ Afterwards you will be able to commit changes to your CodeCommit repositories.
 
 notes:   
 20211021: merged branch with the name "branch3"
- 
