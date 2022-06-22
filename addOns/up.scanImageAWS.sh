@@ -16,6 +16,9 @@ echo REGISTRY_HOST=${REGISTRY_HOST}
 
 git clone https://github.com/mawinkler/vulnerability-management.git
 
+#Print Docker login to Smartcheck
+
+echo -e "\e[1;41mecho ${DOCKERHUB_PASSWORD}| docker login --username ${DOCKERHUB_USERNAME} --password-stdin\e[1;m"
 
 dummy=`echo ${DOCKERHUB_PASSWORD}| docker login --username ${DOCKERHUB_USERNAME} --password-stdin 2>/dev/null`
 if [[ "$dummy" != "Login Succeeded" ]];then
@@ -25,7 +28,7 @@ fi
 
 if [ -z "${1}" ];then
   printf '%s\n' "No image name passed in parameters.  Creating array with sample images"
-  IMAGES=("ubuntu" "redhat/ubi8-minimal" "alpine" "wordpress" "busybox" "redis" "node" "python" "django" "centos"  )
+  IMAGES=("ubuntu" "redhat/ubi8-minimal" "alpine" "wordpress" "busybox" "redis" "node" "python" "django" "centos" "couchbase"  )
 else
   IMAGES=(${1})
 fi
@@ -80,6 +83,15 @@ for((i=0;i<${LENGTH};++i)) do
 
 
     echo "calling smartcheck-scan-action"
+    echo -e "\e[1;41mdocker run --rm --read-only --cap-drop ALL -v /var/run/docker.sock:/var/run/docker.sock --network host \
+        deepsecurity/smartcheck-scan-action \
+            --image-name "${REGISTRY_HOST}/${IMAGES_FLATENED[${i}]}:${IMAGE_TAG}"  \
+            --smartcheck-host="${DSSC_HOST}" \
+            --smartcheck-user="${DSSC_USERNAME}" \
+            --smartcheck-password="${DSSC_PASSWORD}" \
+            --image-pull-auth="{\"username\":\"AWS\",\"password\":\"`aws ecr get-login-password --region ${AWS_REGION}`\"}" \
+            --insecure-skip-tls-verify\e[1;m"
+
     docker run --rm --read-only --cap-drop ALL -v /var/run/docker.sock:/var/run/docker.sock --network host \
         deepsecurity/smartcheck-scan-action \
             --image-name "${REGISTRY_HOST}/${IMAGES_FLATENED[${i}]}:${IMAGE_TAG}" \
