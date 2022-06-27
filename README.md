@@ -235,8 +235,8 @@ https://docs.aws.amazon.com/codecommit/latest/userguide/setting-up-gc.html?icmpi
 In your Cloud9 environment, run the following command to clone this repository:
 
 ```shell
-git clone https://github.com/Robi1021/cloudOneOnAWS.git
-cd cloudOneonAWS
+git clone https://github.com/Robi1021/c1onAWS.git
+cd c1onAWS
 ```
 
 #### 5. Expand the disk space of the Cloud9 environment
@@ -262,9 +262,6 @@ Edit the `00_define_vars.sh` file with the built in editor
 
 
 1. Update the following variables:
-- `DSSC_AC`           # your SmartCheck activation key
-- `TREND_AP_KEY`      # your AP key created in C1AS by adding a "group" for MoneyX 
-- `TREND_AP_SECRET`   # your AP secret created in C1AS by adding a "group" for MoneyX 
 - `C1API_KEY`         # API key created in C1WS (Role= Full Access)
 - `DOCKERHUB_USERNAME`
 - `DOCKERHUB_PASSWORD`
