@@ -86,9 +86,9 @@ export DSSC_REGUSER='administrator'
 
 # APPS  #those apps have been tested and work
 # using distinct variables as exporting arrays in bash is still troublesome
-export APP_GIT_URL1='https://github.com/robi1021/c1-app-sec-moneyx.git'
-export APP_GIT_URL2='https://github.com/robi1021/troopers.git'
-export APP_GIT_URL3='https://github.com/robi1021/mydvwa.git'
+export APP1_GIT_URL='https://github.com/robi1021/c1-app-sec-moneyx.git'
+export APP2_GIT_URL='https://github.com/robi1021/troopers.git'
+export APP3_GIT_URL='https://github.com/robi1021/mydvwa.git'
 
 #systemTAGs; do not change  (mainly used to cleanup the environment)
 export TAGKEY0="c1onaws"    
