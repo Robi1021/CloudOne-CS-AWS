@@ -102,7 +102,7 @@ fi
 printf "\n%s\n" "Cloning/pulling deployC1CSandC1AS"
 #mkdir -p deployC1CSandC1AS
 rm -rf deployC1CSandC1AS
-git clone https://github.com/cvdabbeele/deployC1CSandC1AS.git 
+git clone https://github.com/robi1021/deployC1CSandC1AS.git 
 #git clone https://github.com/cvdabbeele/C1CS.git deployC1CSandC1AS
 cp deployC1CSandC1AS/*.sh ./
 rm -rf deployC1CSandC1AS
