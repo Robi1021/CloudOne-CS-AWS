@@ -19,6 +19,28 @@ export AWS_REGION=`aws configure get region`
 printf '%s\n' "AWS_REGION= $AWS_REGION"
 
 
+#remove smartcheck 
+helm_smartcheck=`helm list -n ${DSSC_NAMESPACE}  -o json | jq -r '.[].name'`
+if [[ "${helm_smartcheck}" =~ "deepsecurity-smartcheck" ]]; then
+  printf "%s" "Uninstalling smartcheck... "
+  helm delete deepsecurity-smartcheck -n ${DSSC_NAMESPACE}
+fi
+
+#delete services
+printf "%s\n" "Removing Services from EKS cluster"
+for i in `kubectl get services -o json | jq -r '.items[].metadata.name'`
+do
+  printf "%s" "... "
+  kubectl delete service $i
+done
+
+#delete deployed apps
+printf "\n%s" "Removing Deployments from cluster... "
+for i in `kubectl get deployments  -o json | jq -r '.items[].metadata.name'`
+do
+  kubectl delete deployment $i
+done
+
 #remove this project's cluster from c1cs
 C1CSCLUSTERS=(`\
 curl --silent --location --request GET "${C1CSAPIURL}/clusters" \
@@ -119,31 +141,6 @@ done
   done 
 
 
-
-
-
-#remove smartcheck 
-helm_smartcheck=`helm list -n ${DSSC_NAMESPACE}  -o json | jq -r '.[].name'`
-if [[ "${helm_smartcheck}" =~ "deepsecurity-smartcheck" ]]; then
-  printf "%s" "Uninstalling smartcheck... "
-  helm delete deepsecurity-smartcheck -n ${DSSC_NAMESPACE}
-fi
-
-#delete services
-printf "%s\n" "Removing Services from EKS cluster"
-for i in `kubectl get services -o json | jq -r '.items[].metadata.name'`
-do
-  printf "%s" "... "
-  kubectl delete service $i
-done
-
-#delete deployed apps
-printf "\n%s" "Removing Deployments from cluster... "
-for i in `kubectl get deployments  -o json | jq -r '.items[].metadata.name'`
-do
-  kubectl delete deployment $i
-done
-
 # Delete ECR repos
 aws_ecr_repos=(`aws ecr describe-repositories --region ${AWS_REGION} | jq -r '.repositories[].repositoryName'`)
 aws_ecr_repo=''
@@ -195,21 +192,85 @@ printf "\n"
 
 #TBD: delete log groups
 
-# delete cluster
-aws_eks_clusters=(`eksctl get clusters -o json | jq -r '.[].metadata.name'`)
-for i in "${!aws_eks_clusters[@]}"; do
-  #printf "%s" "cluster $i =  ${aws_eks_clusters[$i]}.........."
-  if [[ "${aws_eks_clusters[$i]}" =~ "${C1PROJECT}" ]]; then
-       printf "%s\n" "Deleting cluster: ${C1PROJECT}"
-       printf "%s\n" "Waiting for cluster to be deleted. "
-       printf "%s\n" "   Please be patient, this can take up to 30 minutes... (started at:`date`)"
-       starttime=`date +%s`
-       eksctl delete cluster ${C1PROJECT} --wait
-       sleep 30  #giving the delete cluster process a bit more time
-       endtime=`date +%s`
-       printf '%s\n' "  Elapsed time: $((($endtime-$starttime)/60)) minutes"
+# delete nodegroup Stack:
+
+printf "%s\n" "Checking CloudFormation EKS nodegroup Stack"
+aws_stack=""
+aws_stacks=(`aws cloudformation describe-stacks --output json --region $AWS_REGION| jq -r '.Stacks[].StackName'` )
+for i in "${!aws_stacks[@]}"; do
+  # printf "%s\n" "stack $i =  ${aws_stacks[$i]}"
+  if [[ "${aws_stacks[$i]}" =~ "eksctl-${C1PROJECT}-nodegroup" ]]; then
+    printf "%s\n" "Deleting CloudFormation Stack:  ${aws_stacks[$i]}"
+    starttime=`date +%s`
+    printf "%s\n" "Please be patient, this can take up to 30 minutes... (started at:`date`)"
+    aws cloudformation delete-stack --stack-name ${aws_stacks[$i]} --region ${AWS_REGION}
+    #aws cloudformation wait stack-delete-complete --stack-name ${aws_stacks[$i]}  --region ${AWS_REGION}
+    endtime=`date +%s`
+    printf '%s\n' "Elapsed time: $((($endtime-$starttime)/60)) minutes"
   fi
 done
+printf "\n"
+
+printf "%s\n" "Waiting for CloudFormation EKS nodegroup Stack to be deleted"
+aws_stack=""
+aws_stacks=(`aws cloudformation describe-stacks --output json --region $AWS_REGION| jq -r '.Stacks[].StackName'` )
+for i in "${!aws_stacks[@]}"; do
+  # printf "%s\n" "stack $i =  ${aws_stacks[$i]}"
+  if [[ "${aws_stacks[$i]}" =~ "eksctl-${C1PROJECT}-nodegroup" ]]; then
+    printf "%s\n" "Waiting for CloudFormation Stack to be deleted:  ${aws_stacks[$i]}"
+    #printf "%s\n" "Please be patient, this can take up to 30 minutes... (started at:`date`)"
+    #aws cloudformation delete-stack --stack-name ${aws_stacks[$i]} --region ${AWS_REGION}
+    aws cloudformation wait stack-delete-complete --stack-name ${aws_stacks[$i]}  --region ${AWS_REGION}
+  fi
+done
+printf "\n"
+
+printf "%s\n" "Checking CloudFormation EKS Stack"
+aws_stack=""
+aws_stacks=(`aws cloudformation describe-stacks --output json --region $AWS_REGION| jq -r '.Stacks[].StackName'` )
+for i in "${!aws_stacks[@]}"; do
+  # printf "%s\n" "stack $i =  ${aws_stacks[$i]}"
+  if [[ "${aws_stacks[$i]}" =~ "eksctl-${C1PROJECT}-cluster" ]]; then
+    printf "%s\n" "Waiting for CloudFormation Stack deletion to complete:  ${aws_stacks[$i]}"
+    starttime=`date +%s`
+    printf "%s\n" "Please be patient, this can take up to 30 minutes... (started at:`date`)"
+    aws cloudformation delete-stack --stack-name ${aws_stacks[$i]} --region ${AWS_REGION}
+    #aws cloudformation wait stack-delete-complete --stack-name ${aws_stacks[$i]}  --region ${AWS_REGION}
+    printf "wait for EKS stack to be deleted"
+    sleep 100  #giving the delete nodegroup stack process a bit more time
+    endtime=`date +%s`
+    printf '%s\n' "Elapsed time: $((($endtime-$starttime)/60)) minutes"
+  fi
+done
+printf "\n"
+printf "%s\n" "Waiting for CloudFormation EKS Stack to be deleted"
+aws_stack=""
+aws_stacks=(`aws cloudformation describe-stacks --output json --region $AWS_REGION| jq -r '.Stacks[].StackName'` )
+for i in "${!aws_stacks[@]}"; do
+  # printf "%s\n" "stack $i =  ${aws_stacks[$i]}"
+  if [[ "${aws_stacks[$i]}" =~ "eksctl-${C1PROJECT}-cluster" ]]; then
+    printf "%s\n" "Waiting for CloudFormation Stack deletion to complete:  ${aws_stacks[$i]}"
+  #    aws cloudformation delete-stack --stack-name ${aws_stacks[$i]} --region ${AWS_REGION}
+    aws cloudformation wait stack-delete-complete --stack-name ${aws_stacks[$i]}  --region ${AWS_REGION}
+  fi
+done
+printf "\n"
+
+# delete cluster
+#aws_eks_clusters=(`eksctl get clusters -o json | jq -r '.[].metadata.name'`)
+#for i in "${!aws_eks_clusters[@]}"; do
+  #printf "%s" "cluster $i =  ${aws_eks_clusters[$i]}.........."
+ # if [[ "${aws_eks_clusters[$i]}" =~ "${C1PROJECT}" ]]; then
+  #     printf "%s\n" "Deleting cluster: ${C1PROJECT}"
+   #    printf "%s\n" "Waiting for cluster to be deleted. "
+    #   printf "%s\n" "   Please be patient, this can take up to 30 minutes... (started at:`date`)"
+     #  starttime=`date +%s`
+      # eksctl delete cluster ${C1PROJECT} --wait
+       # sleep 30  #giving the delete cluster process a bit more time
+       # endtime=`date +%s`
+       # printf '%s\n' "  Elapsed time: $((($endtime-$starttime)/60)) minutes"
+  # fi
+# done
 
 # deleting apps directory
 printf "%s\n" "Deleting: ~/environment/apps"
@@ -343,37 +404,9 @@ for i in "${!aws_eks_clusters[@]}"; do
 done
 
 
-printf "%s\n" "Checking CloudFormation EKS nodegroup Stack"
-aws_stack=""
-aws_stacks=(`aws cloudformation describe-stacks --output json --region $AWS_REGION| jq -r '.Stacks[].StackName'` )
-for i in "${!aws_stacks[@]}"; do
-  # printf "%s\n" "stack $i =  ${aws_stacks[$i]}"
-  if [[ "${aws_stacks[$i]}" =~ "eksctl-${C1PROJECT}-nodegroup" ]]; then
-    printf "%s\n" "Deleting CloudFormation Stack:  ${aws_stacks[$i]}"
-    starttime=`date +%s`
-    printf "%s\n" "Please be patient, this can take up to 30 minutes... (started at:`date`)"
-    aws cloudformation delete-stack --stack-name ${aws_stacks[$i]} --region ${AWS_REGION}
-    #aws cloudformation wait stack-delete-complete --stack-name ${aws_stacks[$i]}  --region ${AWS_REGION}
-    endtime=`date +%s`
-    printf '%s\n' "Elapsed time: $((($endtime-$starttime)/60)) minutes"
-  fi
-done
 
-printf "%s\n" "Checking CloudFormation EKS Stack"
-aws_stack=""
-aws_stacks=(`aws cloudformation describe-stacks --output json --region $AWS_REGION| jq -r '.Stacks[].StackName'` )
-for i in "${!aws_stacks[@]}"; do
-  # printf "%s\n" "stack $i =  ${aws_stacks[$i]}"
-  if [[ "${aws_stacks[$i]}" =~ "eksctl-${C1PROJECT}-cluster" ]]; then
-    printf "%s\n" "Waiting for CloudFormation Stack deletion to complete:  ${aws_stacks[$i]}"
-    starttime=`date +%s`
-    printf "%s\n" "Please be patient, this can take up to 30 minutes... (started at:`date`)"
-    #aws cloudformation delete-stack --stack-name ${aws_stacks[$i]} --region ${AWS_REGION}
-    aws cloudformation wait stack-delete-complete --stack-name ${aws_stacks[$i]}  --region ${AWS_REGION}
-    endtime=`date +%s`
-    printf '%s\n' "Elapsed time: $((($endtime-$starttime)/60)) minutes"
-  fi
-done
+
+
 
 #cleanup codepipelineartifactbuckets
 readarray -t BUCKETS  <<< `aws s3api list-buckets --region ${AWS_REGION}| jq -r '.Buckets[].Name' `
