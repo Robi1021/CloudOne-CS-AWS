@@ -235,7 +235,7 @@ https://docs.aws.amazon.com/codecommit/latest/userguide/setting-up-gc.html?icmpi
 In your Cloud9 environment, run the following command to clone this repository:
 
 ```shell
-git clone https://github.com/Robi1021/c1onAWS.git
+git clone https://github.com/Robi1021/CloudOneCSonAWS.git
 cd c1onAWS
 ```
 
