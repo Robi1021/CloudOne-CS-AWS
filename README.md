@@ -236,7 +236,7 @@ In your Cloud9 environment, run the following command to clone this repository:
 
 ```shell
 git clone https://github.com/Robi1021/CloudOne-CS-AWS.git
-cd c1onAWS
+cd CloudOne-CS-AWS
 ```
 
 #### 5. Expand the disk space of the Cloud9 environment
