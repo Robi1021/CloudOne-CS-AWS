@@ -10,7 +10,7 @@ unset NAMESPACE
 KUBECTL=kubectl
 HELM=helm
 RELEASE="deepsecurity-smartcheck"
-NAMESPACE=""
+NAMESPACE="smartcheck"
 
 # By default, no core dump files are collected.
 # If collecting core dump is true, 2 core files are collected.
