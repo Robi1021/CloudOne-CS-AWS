@@ -385,7 +385,7 @@ You can login:
 --------------
      URL: https://a1837449ce2db4dcf8a56d955208c8dc-263324481.eu-central-1.elb.amazonaws.com
      user: administrator
-     passw: trendmicro
+     passw: Tr3ndm1cr0!
 --------------
 ```
 
