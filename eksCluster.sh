@@ -49,6 +49,10 @@ managedNodeGroups:
     iam:
       withAddonPolicies:
         albIngress: true
+        ebs: true
+        cloudWatch: true
+        autoScaler: true
+        awsLoadBalancerController: true
     tags:
       ${TAGKEY1}: ${TAGVALUE1}
       ${TAGKEY2}: ${TAGVALUE2}
